@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tagbench — Microstock Metadata Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f7f6f3;
+    --bg-card:#ffffff;
+    --border:#e6e4de;
+    --border-soft:#eeece6;
+    --text:#15161a;
+    --muted:#6b6d72;
+    --muted-2:#9b9d9f;
+    --accent:#5b5fef;
+    --accent-soft:#ecebfd;
+    --gold:#c8862a;
+    --gold-soft:#fbf1e2;
+    --danger:#d1483a;
+    --danger-soft:#fbeae8;
+    --ink:#15161a;
+    --radius-sm:8px;
+    --radius-md:14px;
+    --radius-lg:26px;
+    --radius-pill:99px;
+    --font-ui:'Inter', sans-serif;
+    --font-mono:'IBM Plex Mono', monospace;
+    --shadow-card:0 1px 2px rgba(20,20,30,0.04), 0 12px 32px rgba(20,20,30,0.06);
+    --shadow-lift:0 18px 50px rgba(20,20,30,0.10);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--font-ui);
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--accent-soft); color:var(--accent);}
+  a{color:inherit;}
+  button{font-family:inherit;cursor:pointer;}
+  input,select,textarea{font-family:inherit;}
+  :focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+  .wrap{max-width:1180px; margin:0 auto; padding:0 28px;}
+
+  /* ---------- Nav ---------- */
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between; gap:16px;
+    padding:22px 0 0; flex-wrap:wrap;
+  }
+  .brand{display:flex; align-items:center; gap:9px;}
+  .brand-mark{
+    width:30px; height:30px; border-radius:9px;
+    background:var(--ink); position:relative; flex:none;
+  }
+  .brand-mark::before, .brand-mark::after{
+    content:''; position:absolute; background:#fff; border-radius:2px;
+  }
+  .brand-mark::before{ width:12px; height:2.5px; top:10px; left:9px; }
+  .brand-mark::after{ width:8px; height:2.5px; top:16px; left:9px; }
+  .brand-name{font-weight:800; font-size:16.5px; letter-spacing:-0.01em;}
+
+  /* quality toggle - iOS style pill switch */
+  .quality-toggle{
+    display:flex; align-items:center; gap:10px; background:var(--bg-card); border:1px solid var(--border);
+    padding:6px 8px 6px 14px; border-radius:var(--radius-pill); box-shadow:var(--shadow-card);
+  }
+  .quality-toggle .qt-label{ font-size:12.5px; font-weight:600; color:var(--muted); }
+  .qt-switch{
+    width:46px; height:26px; border-radius:99px; background:var(--ink); position:relative; border:none; padding:0; flex:none;
+    transition:background .15s ease;
+  }
+  .qt-switch .knob{
+    position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%; background:#fff;
+    transition:transform .18s cubic-bezier(.4,0,.2,1); box-shadow:0 1px 3px rgba(0,0,0,0.25);
+  }
+  .qt-switch.pro .knob{ transform:translateX(20px); }
+  .qt-switch.pro{ background:var(--accent); }
+  .quality-toggle .qt-name{ font-size:12.5px; font-weight:700; min-width:36px; }
+
+  .provider-toggle{
+    display:flex; align-items:center; gap:2px; background:var(--bg-card); border:1px solid var(--border);
+    padding:4px; border-radius:var(--radius-pill); box-shadow:var(--shadow-card);
+  }
+  .provider-toggle button{
+    border:none; background:transparent; color:var(--muted); font-size:12.5px; font-weight:700;
+    padding:8px 14px; border-radius:var(--radius-pill); font-family:inherit; transition:background .15s ease, color .15s ease;
+  }
+  .provider-toggle button.active{ background:var(--ink); color:#fff; }
+
+  .nav-center{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:center; }
+
+  .nav-actions{ display:flex; align-items:center; gap:10px; }
+  .pill{
+    display:inline-flex; align-items:center; gap:7px; border-radius:var(--radius-pill);
+    padding:11px 18px; font-size:13.5px; font-weight:600; white-space:nowrap; border:1px solid transparent;
+    transition:transform .1s ease, opacity .15s ease, background .15s ease;
+  }
+  .pill:active{ transform:translateY(1px); }
+  .pill svg{ width:14px; height:14px; flex:none; }
+  .pill-outline{ background:var(--bg-card); border-color:var(--border); color:var(--ink); }
+  .pill-outline:hover{ border-color:var(--ink); }
+  .pill-dark{ background:var(--ink); color:#fff; }
+  .pill-dark:hover{ opacity:0.85; }
+  .pill-dark:disabled{ opacity:0.35; cursor:not-allowed; }
+  .avatar-btn{
+    width:38px; height:38px; border-radius:50%; background:var(--bg-card); border:1px solid var(--border);
+    display:flex; align-items:center; justify-content:center; flex:none; position:relative;
+  }
+  .avatar-btn .dot{ position:absolute; width:8px; height:8px; border-radius:50%; background:var(--muted-2); top:2px; right:2px; border:2px solid var(--bg); }
+  .avatar-btn .dot.on{ background:#2fbf71; }
+
+  /* ---------- Hero ---------- */
+  .hero{ padding:54px 0 30px; }
+  .hero-grid{
+    display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:center;
+  }
+  .hero-copy{ position:relative; z-index:2; }
+  .eyebrow{
+    font-family:var(--font-mono); font-size:12px; color:var(--muted); margin:0 0 18px;
+    display:inline-flex; align-items:center; gap:8px; background:var(--bg-card); border:1px solid var(--border);
+    padding:6px 12px; border-radius:var(--radius-pill);
+  }
+  .eyebrow .sw{ width:6px; height:6px; border-radius:50%; background:var(--accent); }
+  h1.headline{
+    font-weight:800; font-size:clamp(38px,5vw,60px); line-height:0.98; letter-spacing:-0.03em;
+    margin:0 0 20px; max-width:9ch;
+  }
+  h1.headline .accent{ color:var(--accent); }
+  .sub{ font-size:16px; color:var(--muted); max-width:40ch; margin:0 0 30px; }
+
+  .hero-actions{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+  select.platform-select{
+    appearance:none; -webkit-appearance:none;
+    border:1px solid var(--border); border-radius:var(--radius-pill); background:var(--bg-card) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="10" height="6"><path d="M0 0l5 6 5-6z" fill="%236b6d72"/></svg>') no-repeat right 16px center;
+    color:var(--ink); font-size:13.5px; font-weight:600; padding:11px 34px 11px 18px;
+  }
+  input[type="file"]{ display:none; }
+  .caption-row{
+    display:flex; align-items:center; gap:8px; margin-top:22px; font-size:12.5px; color:var(--muted-2);
+    font-family:var(--font-mono);
+  }
+
+  /* ---------- Visual / dropzone card ---------- */
+  .visual-card{
+    position:relative; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg);
+    box-shadow:var(--shadow-lift); padding:26px; min-height:380px;
+    display:flex; align-items:center; justify-content:center; overflow:hidden;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  .visual-card.drag{ border-color:var(--accent); background:var(--accent-soft); }
+  .visual-inner{ position:relative; width:100%; height:100%; display:flex; align-items:center; justify-content:center; }
+  .frame-photo{
+    position:absolute; left:6%; top:10%; width:52%; height:64%; border-radius:18px;
+    background:linear-gradient(155deg, #e9e6df, #d7d3c8);
+    border:1px solid var(--border); transform:rotate(-6deg);
+    box-shadow:0 20px 40px rgba(20,20,30,0.10);
+  }
+  .frame-photo::before{
+    content:''; position:absolute; inset:14px; border-radius:12px; border:1.5px dashed #c9c5ba;
+  }
+  .frame-photo .mtn{
+    position:absolute; left:14%; right:10%; bottom:18%; height:34%;
+    background:linear-gradient(115deg, #c3bfb2, #a9a493 55%, #c3bfb2);
+    clip-path:polygon(0% 100%, 20% 35%, 38% 65%, 55% 20%, 75% 60%, 100% 30%, 100% 100%);
+    opacity:0.75;
+  }
+  .frame-photo .sun{ position:absolute; right:20%; top:16%; width:16%; aspect-ratio:1; border-radius:50%; background:#f4dfae; }
+
+  .tag-float{
+    position:absolute; display:inline-flex; align-items:center; gap:5px; background:var(--bg-card);
+    border:1px solid var(--border); border-radius:var(--radius-pill); padding:7px 12px 7px 10px;
+    font-family:var(--font-mono); font-size:11.5px; font-weight:500; color:var(--ink); box-shadow:var(--shadow-card);
+  }
+  .tag-float .sw{ width:6px; height:6px; border-radius:50%; background:var(--accent); flex:none; }
+  .tag-float.t1{ right:6%; top:8%; transform:rotate(4deg); }
+  .tag-float.t2{ right:2%; top:34%; transform:rotate(-2deg); }
+  .tag-float.t3{ right:12%; top:58%; transform:rotate(3deg); }
+  .tag-float.t4{ right:24%; top:78%; transform:rotate(-4deg); }
+  .tag-float.t5{ left:4%; bottom:6%; transform:rotate(2deg); }
+
+  .gen-btn{
+    position:relative; z-index:3; width:84px; height:84px; border-radius:50%; background:var(--ink);
+    border:6px solid var(--bg-card); display:flex; align-items:center; justify-content:center; color:#fff;
+    box-shadow:0 16px 34px rgba(20,20,30,0.28); transition:transform .15s ease, background .15s ease;
+  }
+  .gen-btn:hover{ transform:scale(1.05); background:var(--accent); }
+  .gen-btn svg{ width:26px; height:26px; }
+
+  .visual-caption{
+    position:absolute; left:22px; bottom:18px; font-family:var(--font-mono); font-size:11.5px; color:var(--muted);
+    background:rgba(255,255,255,0.85); backdrop-filter:blur(4px); padding:6px 10px; border-radius:var(--radius-pill); border:1px solid var(--border-soft);
+  }
+  .visual-count{
+    position:absolute; right:22px; bottom:18px; font-family:var(--font-mono); font-size:11.5px; color:var(--ink); font-weight:600;
+    background:rgba(255,255,255,0.9); padding:6px 10px; border-radius:var(--radius-pill); border:1px solid var(--border-soft);
+  }
+
+  .hero-bottom-row{
+    display:flex; align-items:center; justify-content:space-between; margin-top:26px; gap:14px; flex-wrap:wrap;
+  }
+  .hero-tagline{ font-size:13.5px; color:var(--muted); max-width:34ch; }
+
+  /* ---------- Section ---------- */
+  .section{ padding:26px 0 80px; }
+  .section-head{
+    display:flex; align-items:baseline; justify-content:space-between; margin:0 0 20px; gap:16px; flex-wrap:wrap;
+  }
+  .section-title{ font-size:21px; font-weight:800; letter-spacing:-0.01em; }
+  .count-pill{ font-family:var(--font-mono); font-size:12px; color:var(--muted); border:1px solid var(--border); padding:5px 12px; border-radius:var(--radius-pill); background:var(--bg-card); }
+
+  .empty-state{
+    border:1px dashed var(--border); border-radius:var(--radius-lg); padding:60px 30px; text-align:center; color:var(--muted-2);
+    font-family:var(--font-mono); font-size:13px; background:var(--bg-card);
+  }
+
+  /* ---------- Image cards ---------- */
+  .cards{ display:flex; flex-direction:column; gap:16px; }
+  .card{
+    display:grid; grid-template-columns:190px 1fr; gap:22px;
+    border:1px solid var(--border); border-radius:var(--radius-lg); background:var(--bg-card);
+    padding:18px; position:relative; box-shadow:var(--shadow-card);
+  }
+  .thumb-wrap{ position:relative; }
+  .thumb{
+    width:100%; aspect-ratio:1/1; object-fit:cover; border-radius:var(--radius-md); border:1px solid var(--border-soft); display:block; background:#f1f0ec;
+  }
+  .thumb-name{
+    margin-top:8px; font-family:var(--font-mono); font-size:11px; color:var(--muted-2);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .status-badge{
+    position:absolute; top:8px; left:8px; font-family:var(--font-mono); font-size:10.5px; font-weight:600;
+    padding:4px 9px; border-radius:99px; letter-spacing:0.02em; backdrop-filter:blur(4px);
+  }
+  .status-idle{ background:rgba(107,109,114,0.12); color:#5b5d61; }
+  .status-loading{ background:var(--accent-soft); color:var(--accent); }
+  .status-done{ background:var(--gold-soft); color:var(--gold); }
+  .status-error{ background:var(--danger-soft); color:var(--danger); }
+  .spin{ animation:spin 0.9s linear infinite; display:inline-block; }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  .card-body{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+  .field-row{ display:flex; flex-direction:column; gap:6px; }
+  .field-label-line{ display:flex; align-items:center; justify-content:space-between; }
+  .field-label{ font-family:var(--font-mono); font-size:11px; color:var(--muted); letter-spacing:0.03em; }
+  .counter{ font-family:var(--font-mono); font-size:11px; color:var(--muted-2); }
+  .counter.warn{ color:var(--gold); }
+  .counter.over{ color:var(--danger); }
+
+  .field-input{
+    width:100%; background:#fbfaf8; border:1px solid var(--border-soft); border-radius:var(--radius-sm);
+    color:var(--text); font-size:14.5px; padding:10px 12px; resize:none;
+  }
+  .field-input:focus{ background:#fff; }
+  .field-input:disabled{ color:var(--muted-2); }
+  textarea.field-input{ min-height:52px; line-height:1.45; }
+  input.field-input{ font-weight:700; font-size:15.5px; }
+
+  .kw-box{
+    display:flex; flex-wrap:wrap; gap:6px; padding:8px; background:#fbfaf8; border:1px solid var(--border-soft); border-radius:var(--radius-sm);
+    min-height:44px;
+  }
+  .kw-chip{
+    display:inline-flex; align-items:center; gap:6px; background:var(--accent-soft); color:var(--accent);
+    font-family:var(--font-mono); font-size:12px; padding:4px 4px 4px 9px; border-radius:99px; line-height:1.6;
+  }
+  .kw-chip button{ background:none; border:none; color:var(--accent); opacity:0.7; width:16px; height:16px; border-radius:50%; font-size:13px; line-height:1; }
+  .kw-chip button:hover{ opacity:1; background:rgba(91,95,239,0.18); }
+  .kw-add{ border:none; background:transparent; color:var(--muted-2); font-family:var(--font-mono); font-size:12px; padding:5px 6px; min-width:90px; flex:1; }
+
+  .card-footer{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-top:2px; }
+  .tiny-btns{ display:flex; gap:8px; }
+  .tiny-btn{
+    border:1px solid var(--border); background:#fff; color:var(--muted); font-size:12.5px; font-weight:600;
+    padding:7px 12px; border-radius:var(--radius-pill); display:inline-flex; align-items:center; gap:6px;
+  }
+  .tiny-btn:hover{ color:var(--ink); border-color:var(--ink); }
+  .tiny-btn.danger:hover{ color:var(--danger); border-color:var(--danger); }
+  .card-error{ font-size:12.5px; color:var(--danger); font-family:var(--font-mono); }
+
+  /* ---------- Modal ---------- */
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(20,20,26,0.45); backdrop-filter:blur(3px);
+    display:none; align-items:center; justify-content:center; z-index:50; padding:20px;
+  }
+  .modal-overlay.open{ display:flex; }
+  .modal{
+    width:100%; max-width:440px; background:#fff; border:1px solid var(--border); border-radius:var(--radius-lg);
+    padding:28px; max-height:88vh; overflow:auto; box-shadow:var(--shadow-lift);
+  }
+  .modal h2{ font-weight:800; font-size:21px; margin:0 0 4px; letter-spacing:-0.01em; }
+  .modal .modal-sub{ color:var(--muted); font-size:13px; margin:0 0 22px; }
+  .modal label{ display:block; font-family:var(--font-mono); font-size:11.5px; color:var(--muted); margin-bottom:6px; letter-spacing:0.02em; }
+  .modal .field{ margin-bottom:16px; }
+  .modal input[type="text"], .modal input[type="password"]{
+    width:100%; background:#fbfaf8; border:1px solid var(--border); border-radius:var(--radius-sm);
+    color:var(--text); padding:11px 12px; font-size:14px; font-family:var(--font-mono);
+  }
+  .modal .key-row{ position:relative; }
+  .modal .key-row button{
+    position:absolute; right:8px; top:8px; background:none; border:none; color:var(--muted-2); font-size:11px; font-family:var(--font-mono);
+    padding:4px 6px;
+  }
+  .modal .helptext{ font-size:11.5px; color:var(--muted-2); margin-top:6px; line-height:1.5; }
+  .modal .helptext a{ color:var(--accent); }
+  .modal-actions{ display:flex; justify-content:flex-end; gap:10px; margin-top:22px; }
+
+  .toast-host{ position:fixed; bottom:22px; left:50%; transform:translateX(-50%); z-index:60; display:flex; flex-direction:column; gap:8px; align-items:center; }
+  .toast{
+    background:var(--ink); color:#fff; font-size:13px; padding:10px 16px;
+    border-radius:99px; box-shadow:0 10px 30px rgba(0,0,0,0.25); font-family:var(--font-ui);
+    animation:toast-in .18s ease;
+  }
+  @keyframes toast-in{ from{ opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
+
+  footer{ border-top:1px solid var(--border); padding:26px 0 40px; }
+  footer p{ font-family:var(--font-mono); font-size:11.5px; color:var(--muted-2); margin:0; }
+
+  @media (max-width: 940px){
+    .hero-grid{ grid-template-columns:1fr; }
+    .visual-card{ order:-1; min-height:300px; }
+    .card{ grid-template-columns:1fr; }
+    .thumb-wrap{ max-width:220px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true"></div>
+      <div class="brand-name">Tagbench</div>
+    </div>
+
+    <div class="nav-center">
+      <div class="provider-toggle" id="providerToggle" role="group" aria-label="AI provider">
+        <button data-provider="gemini" class="active" type="button">Gemini</button>
+        <button data-provider="openrouter" type="button">OpenRouter</button>
+      </div>
+
+      <div class="quality-toggle" id="qualityToggle" role="group" aria-label="Generation quality">
+        <span class="qt-label" id="qtLabel">Quality</span>
+        <button class="qt-switch" id="qtSwitch" type="button" aria-pressed="false">
+          <span class="knob"></span>
+        </button>
+        <span class="qt-name" id="qtName">Flash</span>
+      </div>
+    </div>
+
+    <div class="nav-actions">
+      <button class="pill pill-outline" id="exportBtn" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>
+        Export CSV
+      </button>
+      <button class="avatar-btn" id="settingsBtn" type="button" title="API key &amp; settings" aria-label="Settings">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        <span class="dot" id="connDot"></span>
+      </button>
+    </div>
+  </div>
+
+  <section class="hero">
+    <div class="hero-grid">
+      <div class="hero-copy">
+        <span class="eyebrow"><span class="sw"></span> SEO metadata for Adobe Stock, Shutterstock &amp; Freepik</span>
+        <h1 class="headline">Tags that get <span class="accent">found.</span></h1>
+        <p class="sub">Drop in your stock photos or illustrations. Tagbench looks at each one and writes a search-ready title, description and keyword set, tuned to the platform you're submitting to.</p>
+
+        <div class="hero-actions">
+          <label class="pill pill-dark" for="fileInput">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            Add images
+          </label>
+          <input type="file" id="fileInput" accept="image/png,image/jpeg,image/webp" multiple>
+          <select class="platform-select" id="platformSelect"></select>
+          <button class="pill pill-outline" id="generateAllBtn" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.9L19 9.5l-4.9 1.8L12 16l-1.8-4.7L5 9.5l5.2-1.6L12 3z"/></svg>
+            Generate all
+          </button>
+        </div>
+
+        <div class="caption-row">
+          <span id="connText">No API key connected</span>
+        </div>
+      </div>
+
+      <div class="visual-card" id="dropzone">
+        <div class="visual-inner">
+          <div class="frame-photo" aria-hidden="true">
+            <div class="mtn"></div>
+            <div class="sun"></div>
+          </div>
+          <span class="tag-float t1"><span class="sw"></span>golden hour</span>
+          <span class="tag-float t2"><span class="sw"></span>landscape</span>
+          <span class="tag-float t3"><span class="sw"></span>travel</span>
+          <span class="tag-float t4"><span class="sw"></span>nature</span>
+          <span class="tag-float t5"><span class="sw"></span>wallpaper</span>
+          <button class="gen-btn" id="dzTrigger" type="button" aria-label="Add images">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
+          <span class="visual-caption">drop images or click to browse</span>
+          <span class="visual-count" id="visualCount">0 queued</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-bottom-row">
+      <p class="hero-tagline">Your API key stays in your browser — nothing is sent anywhere but Google.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-head">
+      <h2 class="section-title">Your batch</h2>
+      <span class="count-pill" id="countPill">0 images</span>
+    </div>
+    <div id="emptyState" class="empty-state">no images yet — add some above to start tagging</div>
+    <div class="cards" id="cardsHost"></div>
+  </section>
+
+  <footer>
+    <p>Tagbench runs entirely in your browser. Metadata is generated by Gemini — always review before submitting to a marketplace.</p>
+  </footer>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h2>API keys</h2>
+    <p class="modal-sub">Stored locally to your account, never shared. Add whichever provider(s) you plan to use — switch between them anytime with the toggle in the nav.</p>
+
+    <div class="field">
+      <label for="geminiKeyInput">Gemini API key</label>
+      <div class="key-row">
+        <input type="password" id="geminiKeyInput" placeholder="AIza…">
+        <button type="button" data-toggle="geminiKeyInput">show</button>
+      </div>
+      <p class="helptext">Get a free key at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>. Toggle switches between <strong>Flash</strong> (fastest) and <strong>Pro</strong> (more careful on busy scenes).</p>
+    </div>
+
+    <div class="field">
+      <label for="openrouterKeyInput">OpenRouter API key</label>
+      <div class="key-row">
+        <input type="password" id="openrouterKeyInput" placeholder="sk-or-…">
+        <button type="button" data-toggle="openrouterKeyInput">show</button>
+      </div>
+      <p class="helptext">Get a key at <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">openrouter.ai/keys</a>.</p>
+    </div>
+
+    <div class="field">
+      <label for="openrouterModelInput">OpenRouter model (must support vision)</label>
+      <input type="text" id="openrouterModelInput" placeholder="google/gemini-2.0-flash-001">
+      <p class="helptext">Examples: <code>google/gemini-2.0-flash-001</code>, <code>openai/gpt-4o-mini</code>, <code>anthropic/claude-3.5-sonnet</code>. Toggle switches between this model and a <strong>Pro</strong> fallback you set below.</p>
+    </div>
+
+    <div class="field">
+      <label for="openrouterModelProInput">OpenRouter Pro model (optional, for the Pro toggle)</label>
+      <input type="text" id="openrouterModelProInput" placeholder="openai/gpt-4o">
+    </div>
+
+    <div class="modal-actions">
+      <button class="pill pill-outline" id="modalCancel" type="button">Cancel</button>
+      <button class="pill pill-dark" id="modalSave" type="button">Save keys</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-host" id="toastHost"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  const PLATFORMS = {
+    adobestock: { name:"Adobe Stock", titleRec:100, titleMax:200, kwTarget:47, kwMax:49 },
+    shutterstock: { name:"Shutterstock", titleRec:90, titleMax:200, kwTarget:48, kwMax:50 },
+    freepik: { name:"Freepik", titleRec:80, titleMax:150, kwTarget:45, kwMax:50 },
+    dreamstime: { name:"Dreamstime", titleRec:90, titleMax:150, kwTarget:40, kwMax:50 },
+    "123rf": { name:"123RF", titleRec:70, titleMax:100, kwTarget:35, kwMax:50 },
+    generic: { name:"Generic / all platforms", titleRec:80, titleMax:150, kwTarget:40, kwMax:49 }
+  };
+
+  // Two providers. Each has a Flash/Pro-style quality toggle.
+  const QUALITY_MODELS = {
+    gemini: { flash: "gemini-2.5-flash", pro: "gemini-2.5-pro" },
+    openrouter: { flash: "google/gemini-2.0-flash-001", pro: "openai/gpt-4o" }
+  };
+
+  const state = {
+    provider: "gemini",
+    quality: "flash",
+    platform: "adobestock",
+    geminiKey: "",
+    openrouterKey: "",
+    openrouterModelFlash: "google/gemini-2.0-flash-001",
+    openrouterModelPro: "openai/gpt-4o",
+    images: []
+  };
+
+  let uid = 0;
+
+  // ---------- DOM refs ----------
+  const platformSelect = document.getElementById('platformSelect');
+  const fileInput = document.getElementById('fileInput');
+  const dropzone = document.getElementById('dropzone');
+  const dzTrigger = document.getElementById('dzTrigger');
+  const visualCount = document.getElementById('visualCount');
+  const cardsHost = document.getElementById('cardsHost');
+  const emptyState = document.getElementById('emptyState');
+  const countPill = document.getElementById('countPill');
+  const providerToggle = document.getElementById('providerToggle');
+  const qtLabel = document.getElementById('qtLabel');
+  const qtSwitch = document.getElementById('qtSwitch');
+  const qtName = document.getElementById('qtName');
+  const generateAllBtn = document.getElementById('generateAllBtn');
+  const exportBtn = document.getElementById('exportBtn');
+  const settingsBtn = document.getElementById('settingsBtn');
+  const modalOverlay = document.getElementById('modalOverlay');
+  const modalCancel = document.getElementById('modalCancel');
+  const modalSave = document.getElementById('modalSave');
+  const geminiKeyInput = document.getElementById('geminiKeyInput');
+  const openrouterKeyInput = document.getElementById('openrouterKeyInput');
+  const openrouterModelInput = document.getElementById('openrouterModelInput');
+  const openrouterModelProInput = document.getElementById('openrouterModelProInput');
+  const connDot = document.getElementById('connDot');
+  const connText = document.getElementById('connText');
+  const toastHost = document.getElementById('toastHost');
+
+  // ---------- init platform select ----------
+  Object.entries(PLATFORMS).forEach(([key, p]) => {
+    const opt = document.createElement('option');
+    opt.value = key;
+    opt.textContent = p.name;
+    platformSelect.appendChild(opt);
+  });
+  platformSelect.value = state.platform;
+
+  // ---------- storage ----------
+  async function loadSettings(){
+    try{
+      if(!window.storage) return;
+      const res = await window.storage.get('tagbench-settings', false);
+      if(res && res.value){
+        const parsed = JSON.parse(res.value);
+        state.geminiKey = parsed.geminiKey || "";
+        state.quality = parsed.quality || state.quality;
+        state.platform = parsed.platform || state.platform;
+      }
+    }catch(e){ /* no saved settings yet */ }
+    platformSelect.value = state.platform;
+    setQuality(state.quality, false);
+    updateConnStatus();
+  }
+
+  async function saveSettings(){
+    try{
+      if(!window.storage){ toast('Storage unavailable — key will reset on reload'); return; }
+      await window.storage.set('tagbench-settings', JSON.stringify({
+        geminiKey: state.geminiKey,
+        quality: state.quality,
+        platform: state.platform
+      }), false);
+    }catch(e){ toast('Could not save settings'); }
+  }
+
+  function updateConnStatus(){
+    const hasKey = !!state.geminiKey;
+    connDot.classList.toggle('on', hasKey);
+    connText.textContent = hasKey ? 'Gemini connected' : 'No API key connected — click the gear icon';
+  }
+
+  // ---------- toast ----------
+  function toast(msg){
+    const el = document.createElement('div');
+    el.className = 'toast';
+    el.textContent = msg;
+    toastHost.appendChild(el);
+    setTimeout(() => el.remove(), 3200);
+  }
+
+  // ---------- quality toggle ----------
+  function setQuality(q, save){
+    state.quality = q;
+    qtSwitch.classList.toggle('pro', q === 'pro');
+    qtSwitch.setAttribute('aria-pressed', q === 'pro' ? 'true' : 'false');
+    qtName.textContent = q === 'pro' ? 'Pro' : 'Flash';
+    if(save !== false) saveSettings();
+  }
+  qtSwitch.addEventListener('click', () => setQuality(state.quality === 'flash' ? 'pro' : 'flash'));
+
+  platformSelect.addEventListener('change', () => {
+    state.platform = platformSelect.value;
+    saveSettings();
+    renderCards();
+  });
+
+  // ---------- settings modal ----------
+  function openModal(){
+    geminiKeyInput.value = state.geminiKey;
+    modalOverlay.classList.add('open');
+  }
+  function closeModal(){ modalOverlay.classList.remove('open'); }
+  settingsBtn.addEventListener('click', openModal);
+  modalCancel.addEventListener('click', closeModal);
+  modalOverlay.addEventListener('click', (e) => { if(e.target === modalOverlay) closeModal(); });
+  modalSave.addEventListener('click', async () => {
+    state.geminiKey = geminiKeyInput.value.trim();
+    await saveSettings();
+    updateConnStatus();
+    closeModal();
+    toast('Key saved');
+  });
+  document.querySelectorAll('[data-toggle]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const input = document.getElementById(btn.dataset.toggle);
+      const showing = input.type === 'text';
+      input.type = showing ? 'password' : 'text';
+      btn.textContent = showing ? 'show' : 'hide';
+    });
+  });
+
+  // ---------- file handling ----------
+  function fileToPayload(file){
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = reader.result;
+        const base64 = dataUrl.split(',')[1];
+        resolve({ dataUrl, base64, mimeType: file.type || 'image/jpeg' });
+      };
+      reader.onerror = () => reject(new Error('Could not read file'));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function addFiles(fileList){
+    const files = [...fileList].filter(f => f.type.startsWith('image/'));
+    if(!files.length) return;
+    for(const file of files){
+      try{
+        const { dataUrl, base64, mimeType } = await fileToPayload(file);
+        state.images.push({
+          id: ++uid,
+          file, dataUrl, base64, mimeType,
+          status: 'idle',
+          title: '', description: '', keywords: [], category: '',
+          error: ''
+        });
+      }catch(e){ toast(`Could not read ${file.name}`); }
+    }
+    renderCards();
+  }
+
+  fileInput.addEventListener('change', (e) => { addFiles(e.target.files); fileInput.value = ''; });
+  dzTrigger.addEventListener('click', (e) => { e.stopPropagation(); fileInput.click(); });
+  dropzone.addEventListener('click', (e) => { if(e.target === dropzone) fileInput.click(); });
+  ['dragenter','dragover'].forEach(ev => dropzone.addEventListener(ev, (e) => { e.preventDefault(); dropzone.classList.add('drag'); }));
+  ['dragleave','drop'].forEach(ev => dropzone.addEventListener(ev, (e) => { e.preventDefault(); dropzone.classList.remove('drag'); }));
+  dropzone.addEventListener('drop', (e) => { if(e.dataTransfer.files.length) addFiles(e.dataTransfer.files); });
+
+  // ---------- prompt ----------
+  function buildPrompt(platform){
+    return `You are an expert microstock metadata strategist writing for ${platform.name}.
+Look carefully at the attached image and produce SEO-optimised submission metadata.
+
+Respond with ONLY a raw JSON object (no markdown fences, no commentary) in exactly this shape:
+{
+  "title": "a natural, search-friendly sentence a buyer would type, ${platform.titleRec} characters or fewer, front-loaded with the single most important searchable concept, no camera jargon, no keyword stuffing, no quotation marks",
+  "description": "one to two plain sentences describing the image and its likely use case, up to ${platform.titleRec + 60} characters",
+  "keywords": [ARRAY of exactly ${platform.kwTarget} lowercase keywords or short phrases, ordered from most to least relevant, covering: main subject, secondary subjects, action/concept, mood/emotion, colors, composition/style, setting, and likely commercial use-case — no duplicates, no near-duplicates, no generic filler words like "image" or "stock"],
+  "category": "the single best-fit stock photography category name for this image"
+}
+
+Rules:
+- Base every field strictly on what is visibly in the image — never invent people's names, brands, or exact locations you can't confirm visually.
+- The title must read as a natural phrase, not a keyword list.
+- Keywords must be genuinely distinct from one another.`;
+  }
+
+  // ---------- API call (single provider: Gemini) ----------
+  async function callGemini(prompt, img, model){
+    if(!state.geminiKey) throw new Error('Add your Gemini API key in Settings');
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(state.geminiKey)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [ { text: prompt }, { inline_data: { mime_type: img.mimeType, data: img.base64 } } ] }],
+        generationConfig: { responseMimeType: 'application/json', temperature: 0.45 }
+      })
+    });
+    if(!res.ok){
+      const t = await res.text().catch(() => '');
+      throw new Error(`Gemini error ${res.status}${t ? ': ' + t.slice(0,180) : ''}`);
+    }
+    const data = await res.json();
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if(!text) throw new Error('Gemini returned an empty response');
+    return JSON.parse(text);
+  }
+
+  function safeParseKeywords(kw, max){
+    if(!Array.isArray(kw)) return [];
+    const seen = new Set();
+    const out = [];
+    for(const raw of kw){
+      const k = String(raw).trim().toLowerCase();
+      if(!k || seen.has(k)) continue;
+      seen.add(k);
+      out.push(k);
+      if(out.length >= max) break;
+    }
+    return out;
+  }
+
+  async function generateForImage(img){
+    img.status = 'loading';
+    img.error = '';
+    renderCards();
+    try{
+      const platform = PLATFORMS[state.platform];
+      const model = QUALITY_MODELS[state.quality] || QUALITY_MODELS.flash;
+      const prompt = buildPrompt(platform);
+      const result = await callGemini(prompt, img, model);
+      img.title = (result.title || '').toString().trim();
+      img.description = (result.description || '').toString().trim();
+      img.keywords = safeParseKeywords(result.keywords, platform.kwMax);
+      img.category = (result.category || '').toString().trim();
+      img.status = 'done';
+    }catch(e){
+      img.status = 'error';
+      img.error = e.message || 'Something went wrong';
+    }
+    renderCards();
+  }
+
+  async function generateAll(){
+    if(!state.images.length){ toast('Add some images first'); return; }
+    if(!state.geminiKey){ openModal(); toast('Add your Gemini API key to generate metadata'); return; }
+    const queue = state.images.filter(i => i.status !== 'loading');
+    if(!queue.length) return;
+    generateAllBtn.disabled = true;
+    const workerCount = Math.min(3, queue.length);
+    const workers = Array.from({ length: workerCount }, async () => {
+      while(queue.length){
+        const img = queue.shift();
+        await generateForImage(img);
+      }
+    });
+    await Promise.all(workers);
+    generateAllBtn.disabled = false;
+    toast('Batch complete');
+  }
+  generateAllBtn.addEventListener('click', generateAll);
+
+  // ---------- CSV export ----------
+  function csvEscape(v){
+    v = String(v ?? '');
+    if(/[",\n]/.test(v)) v = '"' + v.replace(/"/g, '""') + '"';
+    return v;
+  }
+  function exportCSV(){
+    if(!state.images.length){ toast('Nothing to export yet'); return; }
+    const rows = [['Filename','Title','Description','Keywords','Category']];
+    state.images.forEach(img => {
+      rows.push([img.file.name, img.title, img.description, img.keywords.join(', '), img.category]);
+    });
+    const csv = rows.map(r => r.map(csvEscape).join(',')).join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `tagbench-${state.platform}-${Date.now()}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    toast('CSV exported');
+  }
+  exportBtn.addEventListener('click', exportCSV);
+
+  // ---------- clipboard ----------
+  async function copyText(text, label){
+    try{
+      await navigator.clipboard.writeText(text);
+      toast(`${label} copied`);
+    }catch(e){ toast('Could not copy'); }
+  }
+
+  // ---------- rendering ----------
+  function statusMeta(status){
+    switch(status){
+      case 'loading': return { cls:'status-loading', label:'<svg class="spin" viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3"><circle cx="12" cy="12" r="9" stroke-opacity="0.25"/><path d="M21 12a9 9 0 00-9-9"/></svg> generating' };
+      case 'done': return { cls:'status-done', label:'done' };
+      case 'error': return { cls:'status-error', label:'error' };
+      default: return { cls:'status-idle', label:'pending' };
+    }
+  }
+
+  function renderCards(){
+    countPill.textContent = `${state.images.length} image${state.images.length === 1 ? '' : 's'}`;
+    visualCount.textContent = `${state.images.length} queued`;
+    emptyState.style.display = state.images.length ? 'none' : 'block';
+    cardsHost.innerHTML = '';
+    const platform = PLATFORMS[state.platform];
+
+    state.images.forEach(img => {
+      const card = document.createElement('div');
+      card.className = 'card';
+
+      const st = statusMeta(img.status);
+      const titleLen = img.title.length;
+      const titleCounterClass = titleLen > platform.titleMax ? 'over' : (titleLen > platform.titleRec ? 'warn' : '');
+      const kwCount = img.keywords.length;
+      const kwCounterClass = kwCount > platform.kwMax ? 'over' : (kwCount < Math.max(10, platform.kwTarget - 10) && img.status === 'done' ? 'warn' : '');
+
+      card.innerHTML = `
+        <div class="thumb-wrap">
+          <span class="status-badge ${st.cls}">${st.label}</span>
+          <img class="thumb" src="${img.dataUrl}" alt="">
+          <div class="thumb-name">${escapeHtml(img.file.name)}</div>
+        </div>
+        <div class="card-body">
+          <div class="field-row">
+            <div class="field-label-line">
+              <span class="field-label">TITLE</span>
+              <span class="counter ${titleCounterClass}" data-role="title-counter">${titleLen} / ${platform.titleRec}</span>
+            </div>
+            <input class="field-input" data-role="title" type="text" value="${escapeAttr(img.title)}" placeholder="Generated title will appear here" ${img.status==='loading'?'disabled':''}>
+          </div>
+
+          <div class="field-row">
+            <div class="field-label-line"><span class="field-label">DESCRIPTION</span></div>
+            <textarea class="field-input" data-role="description" placeholder="Generated description will appear here" ${img.status==='loading'?'disabled':''}>${escapeHtml(img.description)}</textarea>
+          </div>
+
+          <div class="field-row">
+            <div class="field-label-line">
+              <span class="field-label">KEYWORDS</span>
+              <span class="counter ${kwCounterClass}" data-role="kw-counter">${kwCount} / ${platform.kwTarget}</span>
+            </div>
+            <div class="kw-box" data-role="kw-box">
+              ${img.keywords.map((k,i) => `<span class="kw-chip" data-idx="${i}">${escapeHtml(k)}<button type="button" data-role="kw-remove" data-idx="${i}" aria-label="Remove ${escapeAttr(k)}">×</button></span>`).join('')}
+              <input class="kw-add" data-role="kw-add" placeholder="${img.keywords.length ? 'add keyword…' : 'keywords will appear here'}" ${img.status==='loading'?'disabled':''}>
+            </div>
+          </div>
+
+          ${img.category ? `<div class="field-row"><span class="field-label">CATEGORY · <span style="color:var(--text); font-family:var(--font-ui); text-transform:none; letter-spacing:0; font-weight:600;">${escapeHtml(img.category)}</span></span></div>` : ''}
+
+          ${img.status === 'error' ? `<div class="card-error">${escapeHtml(img.error)}</div>` : ''}
+
+          <div class="card-footer">
+            <div class="tiny-btns">
+              <button class="tiny-btn" data-role="regen" type="button">${img.status === 'done' ? 'Regenerate' : 'Generate'}</button>
+              <button class="tiny-btn" data-role="copy-all" type="button">Copy all</button>
+            </div>
+            <button class="tiny-btn danger" data-role="remove" type="button">Remove</button>
+          </div>
+        </div>
+      `;
+
+      // wire events
+      card.querySelector('[data-role="regen"]').addEventListener('click', () => {
+        if(!state.geminiKey){ openModal(); toast('Add your Gemini API key to generate metadata'); return; }
+        generateForImage(img);
+      });
+      card.querySelector('[data-role="remove"]').addEventListener('click', () => {
+        state.images = state.images.filter(i => i.id !== img.id);
+        renderCards();
+      });
+      card.querySelector('[data-role="copy-all"]').addEventListener('click', () => {
+        const text = `${img.title}\n\n${img.description}\n\nKeywords: ${img.keywords.join(', ')}`;
+        copyText(text, 'Metadata');
+      });
+      const titleInput = card.querySelector('[data-role="title"]');
+      titleInput.addEventListener('input', () => {
+        img.title = titleInput.value;
+        const len = img.title.length;
+        const counter = card.querySelector('[data-role="title-counter"]');
+        counter.textContent = `${len} / ${platform.titleRec}`;
+        counter.className = 'counter ' + (len > platform.titleMax ? 'over' : (len > platform.titleRec ? 'warn' : ''));
+      });
+      const descInput = card.querySelector('[data-role="description"]');
+      descInput.addEventListener('input', () => { img.description = descInput.value; });
+
+      card.querySelectorAll('[data-role="kw-remove"]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const idx = Number(btn.dataset.idx);
+          img.keywords.splice(idx, 1);
+          renderCards();
+        });
+      });
+      const kwAdd = card.querySelector('[data-role="kw-add"]');
+      kwAdd.addEventListener('keydown', (e) => {
+        if(e.key === 'Enter'){
+          e.preventDefault();
+          const v = kwAdd.value.trim().toLowerCase();
+          if(v && !img.keywords.includes(v)){
+            img.keywords.push(v);
+            renderCards();
+          } else {
+            kwAdd.value = '';
+          }
+        }
+      });
+
+      cardsHost.appendChild(card);
+    });
+  }
+
+  function escapeHtml(str){
+    return String(str ?? '').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  }
+  function escapeAttr(str){
+    return escapeHtml(str).replace(/"/g, '&quot;');
+  }
+
+  loadSettings().then(renderCards);
+})();
+</script>
+</body>
+</html>
